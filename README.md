@@ -11,9 +11,11 @@ Este projeto implementa uma API RESTful para consultar prêmios do Golden Raspbe
 3. Execute a aplicação Spring Boot: `./mvnw spring-boot:run`
 4. Acesse a API através de: `http://localhost:8080/api/films/awards`
 5. Para acessao o banco de dados H2
-	http://localhost:8080/h2-console/
-	User: sa
-	pwd:
+	`http://localhost:8080/h2-console/`
+
+	User: `sa` 
+
+	PWD:
 
 ## Testes de Integração
 
