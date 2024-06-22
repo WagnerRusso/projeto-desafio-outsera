@@ -21,8 +21,7 @@ Este projeto implementa uma API RESTful para consultar prêmios do Golden Raspbe
 
 Para executar os testes de integração:
 
-1. Certifique-se de que a aplicação está em execução (`spring-boot:run`).
-2. Execute os testes de integração com Maven: `./mvnw test`
+ Execute os testes de integração com Maven: `./mvnw test`
 
 Os testes de integração garantem que a API esteja funcionando corretamente conforme as especificações.
 
