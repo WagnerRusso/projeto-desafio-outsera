@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.projeto_desafio_outsera.dto.IntervalDTO;
+import com.projeto_desafio_outsera.dto.MovieDto;
 import com.projeto_desafio_outsera.dto.response.IntervalResponse;
 import com.projeto_desafio_outsera.model.Film;
 import com.projeto_desafio_outsera.repository.FilmRepository;
@@ -21,58 +23,139 @@ public class FilmService {
 	private FilmRepository filmRepository;
 
 	public IntervalResponse getProducersWithMaxAndMinInterval1() {
-		List<IntervalDTO> intervals = calculateProducersIntervals();
-
-		// Encontrar o mínimo e máximo dos intervalos
-		List<IntervalDTO> minIntervals = findMinIntervals(intervals);
-		List<IntervalDTO> maxIntervals = findMaxIntervals(intervals);
-
-		IntervalResponse response = new IntervalResponse();
-		response.setMin(minIntervals);
-		response.setMax(maxIntervals);
-
-		return response;
+		return calculateProducersIntervals();
 	}
 
-	private List<IntervalDTO> calculateProducersIntervals() {
+	private IntervalResponse calculateProducersIntervals() {
 		List<Film> filmsWinners = filmRepository.findByWinner(true);
 
-		// Mapear filmes por produtor
-		Map<String, List<Film>> moviesByProducer = filmsWinners.stream()
-				.collect(Collectors.groupingBy(Film::getProducers));
+		List<MovieDto> filmsWinnersByProducer = new ArrayList<>();
+		for (Film f : filmsWinners) {
+			String[] listNameProducers = null;
 
-		// Calcular intervalos para cada produtor
-		List<IntervalDTO> intervals = new ArrayList<>();
-
-		moviesByProducer.forEach((producer, producerFilms) -> {
-			List<Film> sortedMovies = producerFilms.stream().sorted(Comparator.comparingInt(Film::getYear))
-					.collect(Collectors.toList());
-
-			for (int i = 1; i < sortedMovies.size(); i++) {
-				int interval = sortedMovies.get(i).getYear() - sortedMovies.get(i - 1).getYear();
-				IntervalDTO intervalDTO = new IntervalDTO(producer, interval, sortedMovies.get(i - 1).getYear(),
-						sortedMovies.get(i).getTitle() // Exemplo: usar título do filme seguinte
-				);
-				intervals.add(intervalDTO);
+			if (f.getProducers().contains(",") || f.getProducers().matches(".*\\band\\b.*")) {
+				listNameProducers = f.getProducers().split(", | and ");
+				filmsWinnersByProducer.addAll(mapFilmeByProducer(f, listNameProducers));
+			} else {
+				filmsWinnersByProducer.addAll(mapFilmeByProducer(f, listNameProducers));
 			}
-		});
-		return intervals;
-	}
+		}
 
-	private List<IntervalDTO> findMinIntervals(List<IntervalDTO> intervals) {
-		int minInterval = intervals.stream().filter(interval -> interval.getInterval() > 0)
-				.mapToInt(IntervalDTO::getInterval).min().orElse(Integer.MAX_VALUE);
+		// Pesquisando nomes de produtores que aparecem mais de uma vez
+		List<String> listProducers = filmsWinnersByProducer.stream()
+				.collect(Collectors.groupingBy(p -> p.getProducer(), Collectors.counting())).entrySet().stream()
+				.filter(entry -> entry.getValue() > 1).map(Map.Entry::getKey).collect(Collectors.toList());
 
-		return intervals.stream().filter(interval -> interval.getInterval() == minInterval)
+		// Pegar os objetos correspondente ao producer
+		List<MovieDto> pwinners = filmsWinnersByProducer.stream().filter(p -> listProducers.contains(p.getProducer()))
 				.collect(Collectors.toList());
+
+		IntervalResponse intervalResponse = findMinMaxIntervals(pwinners);
+
+		return intervalResponse;
 	}
 
-	private List<IntervalDTO> findMaxIntervals(List<IntervalDTO> intervals) {
-		int maxInterval = intervals.stream().filter(interval -> interval.getInterval() < Integer.MAX_VALUE)
-				.mapToInt(IntervalDTO::getInterval).max().orElse(0);
+	private IntervalResponse findMinMaxIntervals(List<MovieDto> pwinners) {
+		IntervalResponse intervalResult = new IntervalResponse();
 
-		return intervals.stream().filter(interval -> interval.getInterval() == maxInterval)
-				.collect(Collectors.toList());
+		// Ordenar os filmes vencedores por ano
+		pwinners.sort(Comparator.comparing(MovieDto::getProducer));
+		List<MovieDto> listMoviesWithInterval = new ArrayList<>();
+		MovieDto producer = new MovieDto();
+
+		for (MovieDto dto : pwinners) {
+			if (producer.getProducer() != null && producer.getProducer().equals(dto.getProducer())) {
+				Integer i = dto.getYear() - producer.getYear();
+				dto.setInterval(i);
+				producer.setInterval(i);
+				listMoviesWithInterval.add(dto);
+				listMoviesWithInterval.add(producer);
+			}
+
+			producer = dto;
+		}
+
+		Optional<Integer> maxInterval = listMoviesWithInterval.stream().map(m -> m.getInterval())
+				.max(Integer::compareTo);
+
+		List<MovieDto> movieMaxInterval = listMoviesWithInterval.stream()
+				.filter(m -> m.getInterval() == maxInterval.orElse(Integer.MIN_VALUE)).collect(Collectors.toList());
+
+		Optional<Integer> minInterval = listMoviesWithInterval.stream().map(m -> m.getInterval())
+				.min(Integer::compareTo);
+
+		List<MovieDto> movieMinInterval = listMoviesWithInterval.stream()
+				.filter(m -> m.getInterval() == minInterval.orElse(null)).collect(Collectors.toList());
+
+		intervalResult.setMax(mapMaxIntervalResult(movieMaxInterval));
+		intervalResult.setMin(mapMinIntervalResult(movieMinInterval));
+
+		return intervalResult;
 	}
 
+	private List<MovieDto> mapFilmeByProducer(Film f, String[] listNameProducers) {
+		List<MovieDto> movieDtos = new ArrayList<>();
+
+		if (listNameProducers == null) {
+			MovieDto movie = new MovieDto();
+			movie.setProducer(f.getProducers());
+			movie.setStudios(f.getStudios());
+			movie.setTitle(f.getTitle());
+			movie.setYear(f.getYear());
+			movie.setWinner(f.getWinner());
+
+			movieDtos.add(movie);
+
+			return movieDtos;
+		}
+
+		for (String producer : listNameProducers) {
+			MovieDto movie = new MovieDto();
+			movie.setProducer(producer);
+			movie.setStudios(f.getStudios());
+			movie.setTitle(f.getTitle());
+			movie.setYear(f.getYear());
+			movie.setWinner(f.getWinner());
+
+			movieDtos.add(movie);
+		}
+
+		return movieDtos;
+	}
+
+	private List<IntervalDTO> mapMaxIntervalResult(List<MovieDto> movieMaxInterval) {
+		IntervalDTO intervalDTO = new IntervalDTO(null, 0, 0, 0);
+		List<IntervalDTO> maxInterval = new ArrayList<>();
+
+		intervalDTO.setProducer(movieMaxInterval.get(0).getProducer());
+		intervalDTO.setInterval(movieMaxInterval.get(0).getInterval());
+
+		Integer previousWin = movieMaxInterval.stream().map(y -> y.getYear()).min(Integer::compareTo).orElseThrow();
+		intervalDTO.setPreviousWin(previousWin);
+
+		Integer followingWin = movieMaxInterval.stream().map(y -> y.getYear()).max(Integer::compareTo).orElseThrow();
+		intervalDTO.setFollowingWin(followingWin);
+
+		maxInterval.add(intervalDTO);
+
+		return maxInterval;
+	}
+
+	private List<IntervalDTO> mapMinIntervalResult(List<MovieDto> movieMinInterval) {
+		IntervalDTO intervalDTO = new IntervalDTO(null, 0, 0, 0);
+		List<IntervalDTO> minInterval = new ArrayList<>();
+
+		intervalDTO.setProducer(movieMinInterval.get(0).getProducer());
+		intervalDTO.setInterval(movieMinInterval.get(0).getInterval());
+
+		Integer previousWin = movieMinInterval.stream().map(y -> y.getYear()).min(Integer::compareTo).orElseThrow();
+		intervalDTO.setPreviousWin(previousWin);
+
+		Integer followingWin = movieMinInterval.stream().map(y -> y.getYear()).max(Integer::compareTo).orElseThrow();
+		intervalDTO.setFollowingWin(followingWin);
+
+		minInterval.add(intervalDTO);
+
+		return minInterval;
+	}
 }

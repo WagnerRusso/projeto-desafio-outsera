@@ -1,13 +1,14 @@
 package com.projeto_desafio_outsera.dto;
 
 public class IntervalDTO {
-	
+
 	private String producer;
 	private int interval;
 	private int previousWin;
-	private String followingWin;
+	private int followingWin;
 
-	public IntervalDTO(String producer, int interval, int previousWin, String followingWin) {
+	public IntervalDTO(String producer, int interval, int previousWin, int followingWin) {
+		super();
 		this.producer = producer;
 		this.interval = interval;
 		this.previousWin = previousWin;
@@ -38,11 +39,11 @@ public class IntervalDTO {
 		this.previousWin = previousWin;
 	}
 
-	public String getFollowingWin() {
+	public int getFollowingWin() {
 		return followingWin;
 	}
 
-	public void setFollowingWin(String followingWin) {
+	public void setFollowingWin(int followingWin) {
 		this.followingWin = followingWin;
 	}
 
