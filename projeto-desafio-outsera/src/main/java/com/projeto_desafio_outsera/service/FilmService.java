@@ -124,7 +124,7 @@ public class FilmService {
 	}
 
 	private List<IntervalDTO> mapMaxIntervalResult(List<MovieDto> movieMaxInterval) {
-		IntervalDTO intervalDTO = new IntervalDTO(null, 0, 0, 0);
+		IntervalDTO intervalDTO = new IntervalDTO();
 		List<IntervalDTO> maxInterval = new ArrayList<>();
 
 		intervalDTO.setProducer(movieMaxInterval.get(0).getProducer());
@@ -142,7 +142,7 @@ public class FilmService {
 	}
 
 	private List<IntervalDTO> mapMinIntervalResult(List<MovieDto> movieMinInterval) {
-		IntervalDTO intervalDTO = new IntervalDTO(null, 0, 0, 0);
+		IntervalDTO intervalDTO = new IntervalDTO();
 		List<IntervalDTO> minInterval = new ArrayList<>();
 
 		intervalDTO.setProducer(movieMinInterval.get(0).getProducer());
