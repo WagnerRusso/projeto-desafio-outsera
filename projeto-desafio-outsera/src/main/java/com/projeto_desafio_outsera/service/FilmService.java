@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.projeto_desafio_outsera.dto.IntervalDTO;
 import com.projeto_desafio_outsera.dto.MovieDto;
+import com.projeto_desafio_outsera.dto.MovieMapper;
 import com.projeto_desafio_outsera.dto.response.IntervalResponse;
 import com.projeto_desafio_outsera.model.Film;
 import com.projeto_desafio_outsera.repository.FilmRepository;
@@ -21,12 +22,25 @@ public class FilmService {
 
 	@Autowired
 	private FilmRepository filmRepository;
+	@Autowired
+	private MovieMapper mapper;
 
 	public IntervalResponse getProducersWithMaxAndMinInterval1() {
 		return calculateProducersIntervals();
 	}
 
 	private IntervalResponse calculateProducersIntervals() {
+		
+		/*
+		 * Realizar ajustes
+		 * Levar em consideracao o ano para realizar o calculo do intervalo. ano nao pode ser maior que o sistema
+		 * Tomar cuidado com o calc para ele nao ser numero negativo.
+		 * Rever o teste de integracao com mais cuidado(o teste deve validar se o intervalo e negatio ou positivo)
+		 * montar teste mais descritivos
+		 * adcionar o mapstruct 
+		 *
+		 * */
+		
 		List<Film> filmsWinners = filmRepository.findByWinner(true);
 
 		List<MovieDto> filmsWinnersByProducer = new ArrayList<>();
@@ -97,27 +111,12 @@ public class FilmService {
 		List<MovieDto> movieDtos = new ArrayList<>();
 
 		if (listNameProducers == null) {
-			MovieDto movie = new MovieDto();
-			movie.setProducer(f.getProducers());
-			movie.setStudios(f.getStudios());
-			movie.setTitle(f.getTitle());
-			movie.setYear(f.getYear());
-			movie.setWinner(f.getWinner());
-
-			movieDtos.add(movie);
-
+			movieDtos.add(mapper.filmNameProducerToMovieDTO(f, null));
 			return movieDtos;
 		}
 
 		for (String producer : listNameProducers) {
-			MovieDto movie = new MovieDto();
-			movie.setProducer(producer);
-			movie.setStudios(f.getStudios());
-			movie.setTitle(f.getTitle());
-			movie.setYear(f.getYear());
-			movie.setWinner(f.getWinner());
-
-			movieDtos.add(movie);
+			movieDtos.add(mapper.filmNameProducerToMovieDTO(f, producer));
 		}
 
 		return movieDtos;
