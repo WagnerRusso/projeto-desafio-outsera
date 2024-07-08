@@ -12,4 +12,6 @@ public class MovieDto {
 	private Boolean winner;
 	private Integer interval;
 	
+	private Integer compareMovieId;
+	
 }

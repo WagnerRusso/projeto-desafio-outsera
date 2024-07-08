@@ -14,5 +14,6 @@ public interface MovieMapper {
 	@Mapping(source = "film.year", target = "year")
 	@Mapping(source = "film.winner", target = "winner")
 	MovieDto filmNameProducerToMovieDTO(Film film, String nameProducer);
-	
+
+	MovieDto movieDtoToMovieDto(MovieDto dto);
 }
